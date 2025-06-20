@@ -1,19 +1,13 @@
+// src/tina/config.ts
 import { defineConfig } from "tinacms";
 
 export default defineConfig({
-    clientId: "",                           // set later if you use Tina Cloud
-    token: "",                              // idem
-    build: {
-        publicFolder: "public",               // ✅ added
-        outputFolder: "admin"
-    },
+    clientId: "",
+    token: "",
+    build: { publicFolder: "public", outputFolder: "admin" },
 
-    /* optional, but keeps Tina’s uploads in /public/uploads */
-    media: {
-        tina: {
-            publicFolder: "public",
-            mediaRoot: "uploads"
-        }
+    media: {                       // keep your uploads settings
+        tina: { publicFolder: "public", mediaRoot: "uploads" },
     },
 
     schema: {
@@ -21,16 +15,23 @@ export default defineConfig({
             {
                 name: "post",
                 label: "Posts",
-                path: "content",
+                path: "content/posts",          // <-- point to the folder that holds *.mdx
                 format: "mdx",
+
+                /*  ui.router tells Tina how to build the preview URL  */
+                ui: {
+                    router: ({ document }) => `/posts/${document._sys.filename}`,
+                },
+
+                /*  isTitle & isBody power the sidebar form + live preview  */
                 fields: [
-                    { name: "title", type: "string" },
+                    { name: "title", label: "Title", type: "string", isTitle: true },
                     { name: "description", type: "string" },
                     { name: "date", type: "datetime" },
                     { name: "tags", type: "string", list: true },
-                    { name: "body", label: "Body (MDX)", type: "rich-text" }
-                ]
-            }
-        ]
-    }
+                    { name: "body", label: "Body (MDX)", type: "rich-text", isBody: true },
+                ],
+            },
+        ],
+    },
 });

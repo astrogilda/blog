@@ -1,24 +1,36 @@
-// src/pages/posts/[slug].tsx
+import fs from "node:fs/promises";
+import path from "node:path";
+import Head from "next/head";
+import { type GetStaticPaths, type GetStaticProps } from "next";
 
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import Head from 'next/head';
-import { compileMDX, MDXRemote } from 'next-mdx-remote/rsc';  // ✅ both v5 APIs
+import { serialize } from "next-mdx-remote/serialize";
+import { MDXRemote, type MDXRemoteSerializeResult } from "next-mdx-remote";
+import rehypePrism from "rehype-prism-plus";
+import matter from "gray-matter";
 
-// ✂︎  —— we no longer need gray-matter ————
+/* ---------- front-matter ---------- */
+
 interface FrontMatter {
     title: string;
     description: string;
-    date: string;
+    date: string;           // ISO string
     tags?: string[];
 }
 
 interface PostProps {
+    mdxSource: MDXRemoteSerializeResult;
     frontMatter: FrontMatter;
-    compiledSource: string;          // string returned by compileMDX
 }
 
-export default function PostPage({ frontMatter, compiledSource }: PostProps) {
+/* ---------- page component ---------- */
+
+export default function PostPage({ mdxSource, frontMatter }: PostProps) {
+    const pretty = new Date(frontMatter.date).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+    });
+
     return (
         <>
             <Head>
@@ -26,42 +38,65 @@ export default function PostPage({ frontMatter, compiledSource }: PostProps) {
                 <meta name="description" content={frontMatter.description} />
             </Head>
 
-            <article className="prose mx-auto px-4">
-                <h1>{frontMatter.title}</h1>
-                {/* v5: MDXRemote takes the *compiled* string only */}
-                <MDXRemote source={compiledSource} />
+            <article className="prose prose-lg dark:prose-invert mx-auto px-4">
+                <h1 className="!mt-0">{frontMatter.title}</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{pretty}</p>
+
+                {frontMatter.tags?.length && (
+                    <ul className="flex flex-wrap gap-2 my-4">
+                        {frontMatter.tags.map(t => (
+                            <li
+                                key={t}
+                                className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-xs tracking-wide"
+                            >
+                                #{t}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+
+                {/* hydrated MDX */}
+                <MDXRemote {...mdxSource} />
             </article>
         </>
     );
 }
 
-/* ---------- Static generation ---------- */
+/* ---------- static generation ---------- */
 
-const postsDir = path.join(process.cwd(), 'content');
+const postsDir = path.join(process.cwd(), "content/posts");
 
-export async function getStaticPaths() {
+export const getStaticPaths: GetStaticPaths = async () => {
     const files = await fs.readdir(postsDir);
-    const paths = files
-        .filter(f => f.endsWith('.mdx'))
-        .map(f => ({ params: { slug: f.replace(/\.mdx$/, '') } }));
+    return {
+        paths: files
+            .filter(f => /\.(md|mdx)$/.test(f))
+            .map(f => ({ params: { slug: f.replace(/\.(md|mdx)$/, "") } })),
+        fallback: false
+    };
+};
 
-    return { paths, fallback: false };
-}
+export const getStaticProps: GetStaticProps<PostProps> = async ({ params }) => {
+    const raw = await fs.readFile(
+        path.join(postsDir, `${params!.slug}.mdx`),
+        "utf8"
+    );
 
-export async function getStaticProps({ params }: { params: { slug: string } }) {
-    const slug = params.slug as string;
-    const raw = await fs.readFile(path.join(postsDir, `${slug}.mdx`), 'utf8');
+    const { content, data } = matter(raw) as {
+        content: string;
+        data: FrontMatter & { date: string | Date };
+    };
 
-    // v5 magic – parses front-matter **and** compiles MDX in one call
-    const { content: compiledSource, frontmatter } = await compileMDX<FrontMatter>({
-        source: raw,
-        options: { parseFrontmatter: true },
+    /** Make sure `date` is a plain string */
+    const fm: FrontMatter = {
+        ...data,
+        date: typeof data.date === "string" ? data.date : data.date.toISOString()
+    };
+
+    const mdxSource = await serialize(content, {
+        parseFrontmatter: false,
+        mdxOptions: { rehypePlugins: [rehypePrism] }
     });
 
-    return {
-        props: {
-            compiledSource: String(compiledSource),
-            frontMatter: frontmatter,
-        },
-    };
-}
+    return { props: { mdxSource, frontMatter: fm } };
+};
