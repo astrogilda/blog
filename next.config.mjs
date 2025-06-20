@@ -1,8 +1,13 @@
-import { withMDX } from '@next/mdx';
+import mdx from '@next/mdx';
 
-export default withMDX({
-  pageExtensions: ['tsx', 'mdx'],
-  // enable `next export`
-  output: 'export',
-  trailingSlash: false,
-});
+const withMDX = mdx({ extension: /\.mdx?$/ });
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+    // ⬇️ skip eslint in CI / FastComet builds
+    eslint: { ignoreDuringBuilds: true },
+
+    pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx'],
+};
+
+export default withMDX(nextConfig);

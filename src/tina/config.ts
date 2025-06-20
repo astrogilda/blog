@@ -1,23 +1,36 @@
-import { defineConfig } from 'tinacms';
+import { defineConfig } from "tinacms";
 
 export default defineConfig({
-    branch: 'main',
-    clientId: '',          // add later if you opt into Tina Cloud
-    token: '',             // idem
-    build: { outputFolder: 'admin' },
-    media: { tina: {} },
-    schema: {
-        collections: [{
-            name: 'post',
-            label: 'Posts',
-            path: 'content/posts',
-            fields: [
-                { type: 'string', name: 'title', label: 'Title' },
-                { type: 'string', name: 'description', label: 'Description' },
-                { type: 'datetime', name: 'date', label: 'Date' },
-                { type: 'string', name: 'tags', label: 'Tags', list: true },
-                { type: 'rich-text', name: 'body', label: 'Body', isBody: true },
-            ],
-        }],
+    clientId: "",                           // set later if you use Tina Cloud
+    token: "",                              // idem
+    build: {
+        publicFolder: "public",               // ✅ added
+        outputFolder: "admin"
     },
+
+    /* optional, but keeps Tina’s uploads in /public/uploads */
+    media: {
+        tina: {
+            publicFolder: "public",
+            mediaRoot: "uploads"
+        }
+    },
+
+    schema: {
+        collections: [
+            {
+                name: "post",
+                label: "Posts",
+                path: "content",
+                format: "mdx",
+                fields: [
+                    { name: "title", type: "string" },
+                    { name: "description", type: "string" },
+                    { name: "date", type: "datetime" },
+                    { name: "tags", type: "string", list: true },
+                    { name: "body", label: "Body (MDX)", type: "rich-text" }
+                ]
+            }
+        ]
+    }
 });

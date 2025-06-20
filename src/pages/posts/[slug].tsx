@@ -1,42 +1,67 @@
-import { GetStaticPaths, GetStaticProps } from 'next';
-import { getAllPosts } from '@/lib/posts';
-import fs from 'node:fs';
+// src/pages/posts/[slug].tsx
+
+import fs from 'node:fs/promises';
 import path from 'node:path';
-import matter from 'gray-matter';
-import { MDXRemote, MDXRemoteSerializeResult } from 'next-mdx-remote';
-import { serialize } from 'next-mdx-remote/serialize';
 import Head from 'next/head';
+import { compileMDX, MDXRemote } from 'next-mdx-remote/rsc';  // ✅ both v5 APIs
 
-type Props = {
-    source: MDXRemoteSerializeResult;
-    frontMatter: any;
-};
+// ✂︎  —— we no longer need gray-matter ————
+interface FrontMatter {
+    title: string;
+    description: string;
+    date: string;
+    tags?: string[];
+}
 
-export default function Post({ source, frontMatter }: Props) {
+interface PostProps {
+    frontMatter: FrontMatter;
+    compiledSource: string;          // string returned by compileMDX
+}
+
+export default function PostPage({ frontMatter, compiledSource }: PostProps) {
     return (
         <>
             <Head>
-                <title>{frontMatter.title} | DeepThought</title>
+                <title>{frontMatter.title}</title>
                 <meta name="description" content={frontMatter.description} />
             </Head>
+
             <article className="prose mx-auto px-4">
                 <h1>{frontMatter.title}</h1>
-                <MDXRemote {...source} />
+                {/* v5: MDXRemote takes the *compiled* string only */}
+                <MDXRemote source={compiledSource} />
             </article>
         </>
     );
 }
 
-export const getStaticPaths: GetStaticPaths = async () => ({
-    paths: getAllPosts().map(({ slug }) => ({ params: { slug } })),
-    fallback: false,
-});
+/* ---------- Static generation ---------- */
 
-export const getStaticProps: GetStaticProps = async ({ params }) => {
-    const slug = params?.slug as string;
-    const mdxPath = path.join(process.cwd(), 'content/posts', slug + '.mdx');
-    const source = fs.readFileSync(mdxPath, 'utf8');
-    const { content, data } = matter(source);
-    const mdxSource = await serialize(content, { scope: data });
-    return { props: { source: mdxSource, frontMatter: data } };
-};
+const postsDir = path.join(process.cwd(), 'content');
+
+export async function getStaticPaths() {
+    const files = await fs.readdir(postsDir);
+    const paths = files
+        .filter(f => f.endsWith('.mdx'))
+        .map(f => ({ params: { slug: f.replace(/\.mdx$/, '') } }));
+
+    return { paths, fallback: false };
+}
+
+export async function getStaticProps({ params }: { params: { slug: string } }) {
+    const slug = params.slug as string;
+    const raw = await fs.readFile(path.join(postsDir, `${slug}.mdx`), 'utf8');
+
+    // v5 magic – parses front-matter **and** compiles MDX in one call
+    const { content: compiledSource, frontmatter } = await compileMDX<FrontMatter>({
+        source: raw,
+        options: { parseFrontmatter: true },
+    });
+
+    return {
+        props: {
+            compiledSource: String(compiledSource),
+            frontMatter: frontmatter,
+        },
+    };
+}

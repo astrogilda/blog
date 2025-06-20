@@ -1,22 +1,49 @@
 {
+  // Root-level settings -------------------------------------------------------
   "compilerOptions": {
+    /* Output --------------------------------------------------------------- */
+    "noEmit": true, // Next.js handles transpilation
+    /* Language & strictness ----------------------------------------------- */
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
+    "skipLibCheck": true,
+    /* Module resolution ---------------------------------------------------- */
     "module": "esnext",
     "moduleResolution": "bundler",
+    "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
+    /* Incremental builds --------------------------------------------------- */
     "incremental": true,
+    /* Path aliases (import '@/foo') --------------------------------------- */
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "allowJs": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  // ---------------------------------------------------------------------------
+  // NOTE:
+  // - We **removed** the `"types": [...]` array.  Every `.d.ts` that lives
+  //   inside “include” globs (e.g. `src/types/tina.d.ts`) is picked up
+  //   automatically – no need to list it here.
+  // ---------------------------------------------------------------------------
+  /* Files to compile --------------------------------------------------------- */
+  "include": [
+    "next-env.d.ts",
+    "src/**/*", // TS/TSX & ambient .d.ts under src/
+    "content/**/*" // so `.mdx` front-matter helpers can import types
+  ],
+  /* Things to ignore --------------------------------------------------------- */
+  "exclude": [
+    "node_modules"
+  ]
 }
