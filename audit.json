@@ -1,0 +1,10 @@
+{
+    "ignore": [
+        {
+            "name": "lodash.set",
+            "advisory": "GHSA-p6mc-m468-83gw",
+            "reason": "Only present in TinaCMS dev deps; not shipped to prod build.",
+            "versions": "*"
+        }
+    ]
+}
