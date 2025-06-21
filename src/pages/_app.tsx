@@ -1,33 +1,48 @@
-// src/pages/_app.tsx
+// // src/pages/_app.tsx
+// import '@/styles/globals.css'
+// import type { AppProps } from 'next/app'
+// import dynamic from 'next/dynamic'
+
+// /**
+//  * Tina helpers live in `tinacms/dist/react` from v2 onward.
+//  * The dynamic import keeps Tina out of the server bundle.
+//  */
+// const TinaEditProvider = dynamic(
+//   () => import('tinacms/dist/react').then((m) => m.TinaEditProvider),
+//   { ssr: false }
+// )
+// const TinaCMS = dynamic(() => import('tinacms').then((m) => m.TinaCMS), {
+//   ssr: false,
+// })
+
+// export default function App({ Component, pageProps }: AppProps) {
+//   return (
+//     <TinaEditProvider
+//       /**
+//        * When someone clicks “Edit”, TinaEditProvider swaps
+//        * in the CMS below; otherwise it just renders children.
+//        */
+//       editMode={
+//         <TinaCMS {...pageProps}>
+//           <Component {...pageProps} />
+//         </TinaCMS>
+//       }
+//     >
+//       {/* Normal view-mode render */}
+//       <Component {...pageProps} />
+//     </TinaEditProvider>
+//   )
+// }
+
+
 import '@/styles/globals.css'
 import type { AppProps } from 'next/app'
-import { FC, ReactNode, useEffect, useState } from 'react'
+import { ThemeProvider } from 'next-themes'
 
-const Noop: FC<{ children: ReactNode }> = ({ children }) => <>{children}</>
-
-export default function MyApp({ Component, pageProps }: AppProps) {
-  const [Provider, setProvider] = useState<typeof Noop>(() => Noop)
-
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      import('tinacms/dist/react')
-        .then((mod) => {
-          if (mod.TinaProvider) {
-            // ✔ only update state when TinaProvider is actually present
-            setProvider(() => mod.TinaProvider as unknown as typeof Noop)
-          } else {
-            console.warn('tinacms/dist/react loaded, but TinaProvider undefined')
-          }
-        })
-        .catch((e) =>
-          console.warn('Failed to load TinaProvider – running without CMS', e),
-        )
-    }
-  }, [])
-
+export default function App({ Component, pageProps }: AppProps) {
   return (
-    <Provider>
+    <ThemeProvider attribute="class">
       <Component {...pageProps} />
-    </Provider>
+    </ThemeProvider>
   )
 }

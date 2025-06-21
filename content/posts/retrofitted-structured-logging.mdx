@@ -1,32 +1,30 @@
 ---
-title: Structured Logging 101 – From Opaque Strings to Queryable Events
-description: Why unstructured logs are technical debt...
-date: 2025-06-17T00:00:00.000Z
-tags:
-  - python
-  - logging
-  - structlog
-  - observability
+title: "Structured Logging 101 – From Opaque Strings to Queryable Events"
+description: "Why unstructured logs are technical debt and how to adopt structlog for machine‑readable observability in Python ML systems."
+slug: "structured-logging-with-structlog-guide"
+date: 2025-06-18
+tags: ["python", "logging", "structlog", "observability"]
 ---
-
 
 ## 1 · The hidden cost of `print()` in production
 
 Unstructured logs (`print()`, `logging.warning("%s", var)`) are **easy to write** but **hard to parse**:
 
-* Require brittle regex to extract `user_id`, `event_type`, etc.
-* Break silently when a developer changes wording.
-* Slow ingestion pipelines—regex on billions of lines is CPU-heavy.
+* Require brittle regex to extract `user_id`, `event_type`, etc.  
+* Break silently when a developer changes wording.  
+* Slow ingestion pipelines—regex on billions of lines is CPU‑heavy.
 
-> In modern ML micro-services, unreadable logs = delayed incident diagnosis & wasted engineering hours.
+> In modern ML micro‑services, unreadable logs = delayed incident diagnosis & wasted engineering hours.
 
 ---
 
 ## 2 · Logs as structured data
 
+### 2.1 Paradigm shift
+
 ```python
 # unstructured
-logging.warning("Login failed…")
+logging.warning("Login failed for user %s", user_id)
 
 # structured
 import structlog
@@ -38,7 +36,7 @@ log.warning("login_failed", user_id=user_id, source_ip=ip)
 
 ---
 
-## 3 · A production-ready `structlog` config
+## 3 · A production‑ready `structlog` config
 
 `src/logging_config.py`
 
@@ -50,7 +48,7 @@ import structlog
 
 def configure_logging() -> None:
     """
-    Initialise dual-mode (dev vs prod) structured logging.
+    Initialise dual‑mode (dev vs prod) structured logging.
     """
     log_level      = os.getenv("LOG_LEVEL", "INFO").upper()
     is_production  = os.getenv("ENV", "development") == "production"
@@ -86,9 +84,9 @@ def configure_logging() -> None:
 
 ## 4 · Next up
 
-In the next post we’ll migrate an existing codebase **in < 15 min** using Copilot for bulk edits + Ruff for instant lint/fix.
+In the next post we’ll migrate an existing codebase **in &lt; 15 min** using Copilot for bulk edits + Ruff for instant lint/fix.
 
-***
+---
 
-> **Grab the runnable config** → [Download logging_config.py](https://your-download-link.com/logging_config.py)\
+> **Grab the runnable config** → [Download logging_config.py](https://your-download-link.com/logging_config.py)  
 > **Need structured logging now?** Book a 20-min consult → [https://calendly.com/your-link](https://calendly.com/your-link)

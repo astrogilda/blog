@@ -1,31 +1,23 @@
-/** next.config.mjs  – drop-in replacement
- *  • MDX support (via @next/mdx)
- *  • Turbopack-friendly  (no deprecated options)
- *  • Builds skip ESLint in CI
+/**
+ * next.config.mjs
+ * Standard configuration for Next.js with the MDX plugin.
  */
-
 import mdx from '@next/mdx';
 
 const withMDX = mdx({
-    // recognise “.md” & “.mdx” files
     extension: /\.mdx?$/,
 });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    /* ---------- general ---------- */
+    /* ---------- GENERAL ---------- */
     pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx'],
+    reactStrictMode: true,
 
-    /* skip lint step in vercel/FastComet builds */
-    eslint: { ignoreDuringBuilds: true },
-
-    /* ---------- Turbopack helpers (optional) ----------
-       Ensures MDX is handled when you run `next dev --turbo`.
-       Harmless in classic-webpack mode. */
-    experimental: {
-        turbo: {
-            loaders: { '.mdx': '@mdx-js/loader' },
-        },
+    /* ---------- BUILDS ---------- */
+    // NOTE: This should be set to `false` for production builds to enforce code quality.
+    eslint: {
+        ignoreDuringBuilds: true
     },
 };
 

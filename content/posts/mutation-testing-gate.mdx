@@ -1,0 +1,129 @@
+---
+title: "Mutation Testing as a Safety Gate for Large‑Scale Refactors"
+description: "Why code coverage is insufficient and how to use mutmut mutation testing as a hard CI gate for your Python refactors."
+slug: "mutation-testing-mutmut-refactoring-safety"
+date: 2025-06-20
+tags: ["python", "testing", "mutation-testing", "mutmut", "ci"]
+---
+
+## 1 · Coverage isn’t safety
+
+A passing test suite with **100 % coverage** only proves the lines executed—**not** that logic is correct.  
+If assertions are weak, critical bugs slip through.
+
+```python
+def is_positive(n):
+    return n > 0
+
+def test_is_positive():
+    is_positive(5)   # 100 % coverage, zero assertions!
+```
+
+Change to `n >= 0`—tests still “pass”.
+
+---
+
+## 2 · Mutation testing: tests that test tests
+
+1. **Generate mutants** – each with one tiny change (`>` → `>=`, `+` → `-`, etc.).  
+2. **Run tests** against each mutant.  
+3. **Score**: `killed / total_non_equivalent`.  
+   * Survived mutant 🙁 = hole in your test suite.
+
+---
+
+## 3 · Configure `mutmut`
+
+`pyproject.toml`
+
+```toml
+[tool.mutmut]
+paths_to_mutate     = "rtanalysis/"
+tests_dir           = "tests/"
+runner              = "pytest -x"
+use_coverage        = true
+paths_to_exclude    = "rtanalysis/__init__.py,rtanalysis/logging_config.py"
+```
+
+* `use_coverage=true` skips lines never executed → huge speed gain.  
+* `-x` stops on first failure → faster mutant kill loop.
+
+---
+
+## 4 · Testing structured logs with `pytest-structlog`
+
+```python
+# tests/test_logging.py
+import pytest_structlog
+from rtanalysis.rtanalysis import RTAnalysis
+
+def test_fit_logs_context(log: pytest_structlog.StructuredLogCapture):
+    rta = RTAnalysis()
+    # ... prepare data ...
+    rta.fit(rt_series, acc_series)
+
+    log.assert_event_logged(
+        "model_fitting_complete",
+        mean_rt=2.0,
+        mean_acc=0.8,
+    )
+```
+
+A mutant flipping `mean_acc` to `0.9` will be **killed**.
+
+---
+
+## 5 · GitHub Actions safety gate
+
+`.github/workflows/mutation.yml`
+
+```yaml
+name: Mutation Testing Gate
+on:
+  pull_request:
+    paths:
+      - "rtanalysis/**"
+      - "tests/**"
+
+jobs:
+  mutation-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with: { python-version: "3.11" }
+
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+          pip install mutmut pytest-cov pytest-structlog
+
+      - name: Run mutmut
+        run: mutmut run --ci
+
+      - name: Fail if score < 100 %
+        run: mutmut junitxml --fail-under 100
+
+      - name: HTML report
+        run: mutmut html
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: html/
+```
+
+*Branch protection* → require job success → no PR merges unless MSI ≥ target.
+
+---
+
+## 6 · Wrap‑up
+
+Mutation testing converts **speculative confidence** into **measurable safety**; coupled with structured logging refactor, it guarantees behaviour stays intact.
+
+Next post: **AI assistant showdown**—Copilot vs Cody vs OpenRouter vs local Llama.
+
+---
+
+> **Grab the ready‑made** → [Download mutation.yml](https://your-link/mutation.yml)  
+> **Need help wiring mutation gates?** Book a 20-min consult → [https://calendly.com/your-link](https://calendly.com/your-link)

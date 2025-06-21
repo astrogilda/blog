@@ -1,35 +1,40 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import Head from "next/head";
-import { type GetStaticPaths, type GetStaticProps } from "next";
+import Head from 'next/head';
+import fs from 'fs/promises';
+import path from 'path';
+import matter from 'gray-matter';
+import type { GetStaticPaths, GetStaticProps } from 'next';
+import { serialize } from 'next-mdx-remote/serialize';
+import { MDXRemote, type MDXRemoteSerializeResult } from 'next-mdx-remote';
 
-import { serialize } from "next-mdx-remote/serialize";
-import { MDXRemote, type MDXRemoteSerializeResult } from "next-mdx-remote";
-import rehypePrism from "rehype-prism-plus";
-import matter from "gray-matter";
+import rehypePrism from 'rehype-prism-plus';
+import remarkGfm from 'remark-gfm';
+import Pre from '@/components/Pre';
+import ThemeToggle from '@/components/ThemeToggle';
+import ArticleLayout from '@/components/ArticleLayout';
+import dynamic from 'next/dynamic'; // Import dynamic
+import { useRef } from 'react'; // Import useRef
 
-/* ---------- front-matter ---------- */
+// Dynamically import TableOfContents (client-side only)
+const TableOfContents = dynamic(() => import('@/components/TableOfContents'), { ssr: false });
 
 interface FrontMatter {
     title: string;
-    description: string;
-    date: string;           // ISO string
+    description?: string;
+    date?: string;
     tags?: string[];
 }
 
 interface PostProps {
-    mdxSource: MDXRemoteSerializeResult;
     frontMatter: FrontMatter;
+    mdxSource: MDXRemoteSerializeResult;
 }
 
-/* ---------- page component ---------- */
+const components = {
+    pre: Pre as (props: any) => React.ReactElement,
+};
 
-export default function PostPage({ mdxSource, frontMatter }: PostProps) {
-    const pretty = new Date(frontMatter.date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "long",
-        day: "numeric"
-    });
+export default function PostPage({ frontMatter, mdxSource }: PostProps) {
+    const contentRef = useRef<HTMLDivElement>(null);
 
     return (
         <>
@@ -38,65 +43,58 @@ export default function PostPage({ mdxSource, frontMatter }: PostProps) {
                 <meta name="description" content={frontMatter.description} />
             </Head>
 
-            <article className="prose prose-lg dark:prose-invert mx-auto px-4">
-                <h1 className="!mt-0">{frontMatter.title}</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{pretty}</p>
-
-                {frontMatter.tags?.length && (
-                    <ul className="flex flex-wrap gap-2 my-4">
-                        {frontMatter.tags.map(t => (
-                            <li
-                                key={t}
-                                className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-xs tracking-wide"
-                            >
-                                #{t}
-                            </li>
-                        ))}
-                    </ul>
-                )}
-
-                {/* hydrated MDX */}
-                <MDXRemote {...mdxSource} />
-            </article>
+            <ArticleLayout
+                title={frontMatter.title}
+                date={frontMatter.date!}
+                tags={frontMatter.tags || []}
+            >
+                <div className="flex justify-between items-center mb-4">
+                    <ThemeToggle />
+                    {/* Add Table of Contents dynamically (client-side only) */}
+                    <TableOfContents content={contentRef} />
+                </div>
+                {/* Render MDX content */}
+                <div ref={contentRef}>
+                    <MDXRemote {...mdxSource} components={components} />
+                </div>
+            </ArticleLayout>
         </>
     );
 }
 
-/* ---------- static generation ---------- */
-
-const postsDir = path.join(process.cwd(), "content/posts");
-
 export const getStaticPaths: GetStaticPaths = async () => {
+    const postsDir = path.join(process.cwd(), 'content', 'posts');
     const files = await fs.readdir(postsDir);
-    return {
-        paths: files
-            .filter(f => /\.(md|mdx)$/.test(f))
-            .map(f => ({ params: { slug: f.replace(/\.(md|mdx)$/, "") } })),
-        fallback: false
-    };
+    const paths = files
+        .filter((f) => f.endsWith('.mdx'))
+        .map((f) => ({ params: { slug: f.replace(/\.mdx$/, '') } }));
+    return { paths, fallback: 'blocking' };
 };
 
 export const getStaticProps: GetStaticProps<PostProps> = async ({ params }) => {
-    const raw = await fs.readFile(
-        path.join(postsDir, `${params!.slug}.mdx`),
-        "utf8"
-    );
+    const slug = params!.slug as string;
+    const fullPath = path.join(process.cwd(), 'content/posts', `${slug}.mdx`);
+    const fileContents = await fs.readFile(fullPath, 'utf-8');
 
-    const { content, data } = matter(raw) as {
-        content: string;
-        data: FrontMatter & { date: string | Date };
-    };
-
-    /** Make sure `date` is a plain string */
-    const fm: FrontMatter = {
-        ...data,
-        date: typeof data.date === "string" ? data.date : data.date.toISOString()
+    const { data: fmRaw, content } = matter(fileContents);
+    const frontMatter: FrontMatter = {
+        title: String(fmRaw.title),
+        description: fmRaw.description ? String(fmRaw.description) : undefined,
+        date: fmRaw.date ? String(fmRaw.date) : undefined,
+        tags: Array.isArray(fmRaw.tags) ? fmRaw.tags.map((t) => String(t)) : [],
     };
 
     const mdxSource = await serialize(content, {
-        parseFrontmatter: false,
-        mdxOptions: { rehypePlugins: [rehypePrism] }
+        mdxOptions: {
+            remarkPlugins: [remarkGfm],
+            rehypePlugins: [rehypePrism as any],
+        },
     });
 
-    return { props: { mdxSource, frontMatter: fm } };
+    return {
+        props: {
+            frontMatter,
+            mdxSource,
+        },
+    };
 };

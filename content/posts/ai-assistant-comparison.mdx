@@ -1,0 +1,65 @@
+---
+title: "Choosing the Right AI Assistant – Copilot vs Cody vs OpenRouter vs Local Llama vs Tabnine"
+description: "Enterprise‑focused comparison of major AI pair‑programmers: context depth, privacy, model flexibility, and refactor strengths."
+slug: "ai-assistant-comparison-copilot-cody-openrouter-tabnine"
+date: 2025-06-21
+tags: ["ai-assistants", "copilot", "cody", "openrouter", "tabnine", "llama", "refactoring"]
+---
+
+## 1 · Not all AI assistants are created equal
+
+Structured‑logging retrofit? API migration across 50 micro‑services?  
+The “best” assistant depends on:
+
+* **Codebase context** it can ingest.  
+* **Model flexibility** (GPT‑4, Claude, Mixtral, local Llama…).  
+* **Security & privacy** posture.  
+* **Multi‑file apply** UX and cost.
+
+---
+
+## 2 · Core trade‑offs
+
+| Dimension | Why it matters |
+|-----------|----------------|
+| Code graph | Deep understanding means fewer hallucinated edits. |
+| Model choice | Ability to switch models for cost / latency / licence. |
+| Deployment | Cloud SaaS vs self‑host vs fully local. |
+| Refactor UX | Can it atomically modify dozens of files? |
+| Cost | Pay‑per‑seat, pay‑per‑token, or free local? |
+
+---
+
+## 3 · Feature matrix (2025‑06)
+
+| Tool | Best for | Code context | Multi‑file apply | Model choice | Security / privacy |
+|------|----------|--------------|------------------|--------------|--------------------|
+| **GitHub Copilot** | Fast single‑pattern edits, individual productivity | Good – open tabs + @workspace | Possible, needs prompt iterations | Closed (OpenAI GPT‑4 Turbo) | Cloud SaaS |
+| **Sourcegraph Cody** | Deep architectural / multi‑repo refactors | **Excellent** – full code graph | Native “Smart Apply”, atomic | Flexible (Claude, GPT‑4, Gemini) | Self‑host option |
+| **OpenRouter CLI (`cline`)** | Model‑agnostic experiments, pay‑as‑you‑go | Good – current workspace | CLI patch apply; scripted | 80+ models selectable | Cloud (choose regional) |
+| **Continue + llama.cpp** | Totally offline, GPU / CPU local dev | Local file set | VS Code context actions | Any GGUF model (Mistral, Phi‑3…) | Code never leaves laptop |
+| **Tabnine** | Fast autocomplete, privacy | Good – local + cloud hybrid | Limited to single file | Multiple LLMs incl. local engine | On‑prem/fully local mode |
+
+---
+
+## 4 · Recommendations
+
+* **Copilot** – quickest ROI for patterned edits (eg. structured‑logging retrofit).  
+* **Cody** – enterprise‑wide API migrations; needs full dependency graph.  
+* **OpenRouter** – want Mixtral for fuzzy search today, Claude tomorrow; low fixed cost.  
+* **Continue + Llama** – air‑gapped servers, defense clients, or hack‑on‑a‑plane with no internet.  
+* **Tabnine** – teams prioritising private autocomplete with minimal setup.
+
+> **Toolkit mindset:** treat assistants as interchangeable plugins—pick per task, not per ideology.
+
+---
+
+## 5 · Next steps
+
+1. Trial at least **two** assistants on the *same* refactor, compare diff quality.  
+2. Pair your chosen AI with **Ruff** (quality) + **mutmut** (safety) gates.  
+3. Iterate prompts; store successful refactor prompts in a team “prompt library”.
+
+---
+
+> **Need an AI tooling roadmap?** Book a 20-min consult → [https://calendly.com/your-link](https://calendly.com/your-link)
